@@ -78,7 +78,7 @@ var unifiedServer = function(req, res){
       // Route the request to the handler specified in the router
       chosenHandler(data,function(statusCode,payload){
 
-        // Use the status code returned from the handler, or set the default status code to 200
+        // Check if the typeof status code returned from the handler is a number, or set the default status code to 200
         statusCode = typeof(statusCode) == 'number' ? statusCode : 200;
 
         // Use the payload returned from the handler, or set the default payload to an empty object
