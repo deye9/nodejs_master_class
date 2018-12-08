@@ -8,7 +8,7 @@
 
 
 // Dependencies
-var mathLib = require('./lib/math');
+var mathLib = require('./lib/math.js');
 var jokesLib = require('./lib/jokes');
 
 
