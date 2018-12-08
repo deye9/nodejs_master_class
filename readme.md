@@ -17,5 +17,3 @@
 ## Section 7
 
 ## Section 8
-
-## Homework Assignment #1
