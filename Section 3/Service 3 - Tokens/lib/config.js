@@ -1,7 +1,7 @@
 /*
  * Create and export configuration variables
  *
- */
+*/
 
 // Container for all environments
 var environments = {};

@@ -1,7 +1,7 @@
 /*
  * Request Handlers
  *
- */
+*/
 
 // Dependencies
 var _data = require('./data');
@@ -95,11 +95,11 @@ handlers._users.get = function(data,callback){
     // Get token from headers
     var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
     // Verify that the given token is valid for the phone number
-    handlers._tokens.verifyToken(token,phone,function(tokenIsValid){
-      if(tokenIsValid){
+    handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
+      if (tokenIsValid) {
         // Lookup the user
-        _data.read('users',phone,function(err,data){
-          if(!err && data){
+        _data.read('users', phone, function(err, data) {
+          if(!err && data) {
             // Remove the hashed password from the user user object before returning it to the requester
             delete data.hashedPassword;
             callback(200,data);
@@ -214,9 +214,9 @@ handlers._users.delete = function(data,callback){
 };
 
 // Tokens
-handlers.tokens = function(data,callback){
-  var acceptableMethods = ['post','get','put','delete'];
-  if(acceptableMethods.indexOf(data.method) > -1){
+handlers.tokens = function(data, callback){
+  var acceptableMethods = ['post', 'get', 'put', 'delete'];
+  if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._tokens[data.method](data,callback);
   } else {
     callback(405);
@@ -229,16 +229,16 @@ handlers._tokens  = {};
 // Tokens - post
 // Required data: phone, password
 // Optional data: none
-handlers._tokens.post = function(data,callback){
+handlers._tokens.post = function(data, callback){
   var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
   var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
-  if(phone && password){
+  if (phone && password) {
     // Lookup the user who matches that phone number
-    _data.read('users',phone,function(err,userData){
-      if(!err && userData){
+    _data.read('users', phone, function(err, userData) {
+      if (!err && userData) {
         // Hash the sent password, and compare it to the password stored in the user object
         var hashedPassword = helpers.hash(password);
-        if(hashedPassword == userData.hashedPassword){
+        if (hashedPassword == userData.hashedPassword) {
           // If valid, create a new token with a random name. Set an expiration date 1 hour in the future.
           var tokenId = helpers.createRandomString(20);
           var expires = Date.now() + 1000 * 60 * 60;
@@ -249,18 +249,18 @@ handlers._tokens.post = function(data,callback){
           };
 
           // Store the token
-          _data.create('tokens',tokenId,tokenObject,function(err){
-            if(!err){
-              callback(200,tokenObject);
+          _data.create('tokens', tokenId, tokenObject, function(err) {
+            if(!err) {
+              callback(200, tokenObject);
             } else {
-              callback(500,{'Error' : 'Could not create the new token'});
+              callback(500, {'Error' : 'Could not create the new token'});
             }
           });
         } else {
-          callback(400,{'Error' : 'Password did not match the specified user\'s stored password'});
+          callback(400, {'Error' : 'Password did not match the specified user\'s stored password'});
         }
       } else {
-        callback(400,{'Error' : 'Could not find the specified user.'});
+        callback(400, {'Error' : 'Could not find the specified user.'});
       }
     });
   } else {
@@ -276,7 +276,7 @@ handlers._tokens.get = function(data,callback){
   var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
   if(id){
     // Lookup the token
-    _data.read('tokens',id,function(err,tokenData){
+    _data.read('tokens', id, function(err, tokenData){
       if(!err && tokenData){
         callback(200,tokenData);
       } else {
@@ -291,72 +291,73 @@ handlers._tokens.get = function(data,callback){
 // Tokens - put
 // Required data: id, extend
 // Optional data: none
-handlers._tokens.put = function(data,callback){
-  var id = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
+handlers._tokens.put = function(data, callback) {
   var extend = typeof(data.payload.extend) == 'boolean' && data.payload.extend == true ? true : false;
-  if(id && extend){
+  var id = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
+
+  if(id && extend) {
     // Lookup the existing token
-    _data.read('tokens',id,function(err,tokenData){
+    _data.read('tokens', id, function(err, tokenData) {
       if(!err && tokenData){
         // Check to make sure the token isn't already expired
         if(tokenData.expires > Date.now()){
           // Set the expiration an hour from now
           tokenData.expires = Date.now() + 1000 * 60 * 60;
           // Store the new updates
-          _data.update('tokens',id,tokenData,function(err){
+          _data.update('tokens', id, tokenData, function(err) {
             if(!err){
               callback(200);
             } else {
-              callback(500,{'Error' : 'Could not update the token\'s expiration.'});
+              callback(500, {'Error' : 'Could not update the token\'s expiration.'});
             }
           });
         } else {
-          callback(400,{"Error" : "The token has already expired, and cannot be extended."});
+          callback(400, {"Error" : "The token has already expired, and cannot be extended."});
         }
       } else {
-        callback(400,{'Error' : 'Specified user does not exist.'});
+        callback(400, {'Error' : 'Specified user does not exist.'});
       }
     });
   } else {
-    callback(400,{"Error": "Missing required field(s) or field(s) are invalid."});
+    callback(400, {"Error": "Missing required field(s) or field(s) are invalid."});
   }
 };
-
 
 // Tokens - delete
 // Required data: id
 // Optional data: none
-handlers._tokens.delete = function(data,callback){
+handlers._tokens.delete = function(data, callback){
   // Check that id is valid
   var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
-  if(id){
+  
+  if (id) {
     // Lookup the token
-    _data.read('tokens',id,function(err,tokenData){
+    _data.read('tokens', id, function(err, tokenData) {
       if(!err && tokenData){
         // Delete the token
-        _data.delete('tokens',id,function(err){
-          if(!err){
+        _data.delete('tokens', id, function(err) {
+          if (!err) {
             callback(200);
           } else {
-            callback(500,{'Error' : 'Could not delete the specified token'});
+            callback(500, {'Error' : 'Could not delete the specified token'});
           }
         });
       } else {
-        callback(400,{'Error' : 'Could not find the specified token.'});
+        callback(400, {'Error' : 'Could not find the specified token.'});
       }
     });
   } else {
-    callback(400,{'Error' : 'Missing required field'})
+    callback(400, {'Error' : 'Missing required field'})
   }
 };
 
 // Verify if a given token id is currently valid for a given user
-handlers._tokens.verifyToken = function(id,phone,callback){
+handlers._tokens.verifyToken = function(id, phone, callback){
   // Lookup the token
-  _data.read('tokens',id,function(err,tokenData){
-    if(!err && tokenData){
+  _data.read('tokens', id, function(err, tokenData) {
+    if (!err && tokenData) {
       // Check that the token is for the given user and has not expired
-      if(tokenData.phone == phone && tokenData.expires > Date.now()){
+      if (tokenData.phone == phone && tokenData.expires > Date.now()) {
         callback(true);
       } else {
         callback(false);
