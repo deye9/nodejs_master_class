@@ -91,7 +91,6 @@ var unifiedServer = function(req, res){
         res.setHeader('Content-Type', 'application/json');
         res.writeHead(statusCode);
         res.end(payloadString);
-        console.log(trimmedPath,statusCode);
       });
 
   });
@@ -100,7 +99,7 @@ var unifiedServer = function(req, res){
 // Define all the handlers
 var handlers = {};
 
-// Ping handler
+// Hello handler
 handlers.hello = function(data, callback){
   callback(200, {'message':'Welcome to Homework Assignment #1 Route 1'});
 };
