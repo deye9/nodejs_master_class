@@ -4,21 +4,21 @@
  */
 
 // Dependencies
+var fs = require('fs');
+var url = require('url');
 var http = require('http');
 var https = require('https');
-var url = require('url');
-var StringDecoder = require('string_decoder').StringDecoder;
 var config = require('./config');
-var fs = require('fs');
+var StringDecoder = require('string_decoder').StringDecoder;
 
  // Instantiate the HTTP server
-var httpServer = http.createServer(function(req,res){
-  unifiedServer(req,res);
+var httpServer = http.createServer(function(req, res) {
+  unifiedServer(req, res);
 });
 
 // Start the HTTP server
-httpServer.listen(config.httpPort,function(){
-  console.log('The HTTP server is running on port '+config.httpPort);
+httpServer.listen(config.httpPort,function() {
+  console.log('The HTTP server is running on port ' + config.httpPort);
 });
 
 // Instantiate the HTTPS server
@@ -26,17 +26,17 @@ var httpsServerOptions = {
   'key': fs.readFileSync('./https/key.pem'),
   'cert': fs.readFileSync('./https/cert.pem')
 };
-var httpsServer = https.createServer(httpsServerOptions,function(req,res){
-  unifiedServer(req,res);
+var httpsServer = https.createServer(httpsServerOptions, function(req, res){
+  unifiedServer(req, res);
 });
 
 // Start the HTTPS server
-httpsServer.listen(config.httpsPort,function(){
- console.log('The HTTPS server is running on port '+config.httpsPort);
+httpsServer.listen(config.httpsPort, function() {
+ console.log('The HTTPS server is running on port ' + config.httpsPort);
 });
 
 // All the server logic for both the http and https server
-var unifiedServer = function(req,res){
+var unifiedServer = function(req, res) {
 
   // Parse the url
   var parsedUrl = url.parse(req.url, true);
