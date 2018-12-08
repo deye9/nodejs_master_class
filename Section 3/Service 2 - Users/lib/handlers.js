@@ -11,20 +11,20 @@ var helpers = require('./helpers');
 var handlers = {};
 
 // Ping
-handlers.ping = function(data,callback){
+handlers.ping = function(data, callback) {
     callback(200);
 };
 
 // Not-Found
-handlers.notFound = function(data,callback){
+handlers.notFound = function(data, callback) {
   callback(404);
 };
 
 // Users
-handlers.users = function(data,callback){
+handlers.users = function(data, callback) {
   var acceptableMethods = ['post','get','put','delete'];
-  if(acceptableMethods.indexOf(data.method) > -1){
-    handlers._users[data.method](data,callback);
+  if(acceptableMethods.indexOf(data.method) > -1) {
+    handlers._users[data.method](data, callback);
   } else {
     callback(405);
   }
@@ -36,7 +36,7 @@ handlers._users  = {};
 // Users - post
 // Required data: firstName, lastName, phone, password, tosAgreement
 // Optional data: none
-handlers._users.post = function(data,callback){
+handlers._users.post = function(data, callback){
   // Check that all required fields are filled out
   var firstName = typeof(data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
   var lastName = typeof(data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
