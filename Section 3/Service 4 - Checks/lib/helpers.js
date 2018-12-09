@@ -1,11 +1,11 @@
 /*
  * Helpers for various tasks
  *
- */
+*/
 
 // Dependencies
-var config = require('./config');
 var crypto = require('crypto');
+var config = require('./config');
 
 // Container for all the helpers
 var helpers = {};
@@ -51,7 +51,6 @@ helpers.createRandomString = function(strLength){
     return false;
   }
 };
-
 
 // Export the module
 module.exports = helpers;
