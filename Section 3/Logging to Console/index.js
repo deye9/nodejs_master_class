@@ -11,7 +11,7 @@ var workers = require('./lib/workers');
 var app = {};
 
 // Init function
-app.init = function(){
+app.init = function () {
 
   // Start the server
   server.init();
@@ -23,7 +23,6 @@ app.init = function(){
 
 // Self executing
 app.init();
-
 
 // Export the app
 module.exports = app;

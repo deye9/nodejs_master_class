@@ -52,13 +52,8 @@ workers.validateCheckData = function (originalCheckData) {
   originalCheckData.lastChecked = typeof (originalCheckData.lastChecked) == 'number' && originalCheckData.lastChecked > 0 ? originalCheckData.lastChecked : false;
 
   // If all checks pass, pass the data along to the next step in the process
-  if (originalCheckData.id &&
-    originalCheckData.userPhone &&
-    originalCheckData.protocol &&
-    originalCheckData.url &&
-    originalCheckData.method &&
-    originalCheckData.successCodes &&
-    originalCheckData.timeoutSeconds) {
+  if (originalCheckData.id && originalCheckData.userPhone && originalCheckData.protocol && originalCheckData.url &&
+      originalCheckData.method && originalCheckData.successCodes && originalCheckData.timeoutSeconds) {
     workers.performCheck(originalCheckData);
   } else {
     // If checks fail, log the error and fail silently
