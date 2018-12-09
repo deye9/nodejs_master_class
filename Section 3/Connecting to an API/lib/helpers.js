@@ -4,9 +4,9 @@
  */
 
 // Dependencies
-var config = require('./config');
-var crypto = require('crypto');
 var https = require('https');
+var crypto = require('crypto');
+var config = require('./config');
 var querystring = require('querystring');
 
 // Container for all the helpers
@@ -54,28 +54,28 @@ helpers.createRandomString = function(strLength){
   }
 };
 
-helpers.sendTwilioSms = function(phone,msg,callback){
+helpers.sendTwilioSms = function(phone, msg, callback) {
   // Validate parameters
   phone = typeof(phone) == 'string' && phone.trim().length == 10 ? phone.trim() : false;
   msg = typeof(msg) == 'string' && msg.trim().length > 0 && msg.trim().length <= 1600 ? msg.trim() : false;
-  if(phone && msg){
+  
+  if(phone && msg) {
 
     // Configure the request payload
     var payload = {
       'From' : config.twilio.fromPhone,
-      'To' : '+1'+phone,
+      'To' : '+1' + phone,
       'Body' : msg
     };
     var stringPayload = querystring.stringify(payload);
-
 
     // Configure the request details
     var requestDetails = {
       'protocol' : 'https:',
       'hostname' : 'api.twilio.com',
       'method' : 'POST',
-      'path' : '/2010-04-01/Accounts/'+config.twilio.accountSid+'/Messages.json',
-      'auth' : config.twilio.accountSid+':'+config.twilio.authToken,
+      'path' : '/2010-04-01/Accounts/' + config.twilio.accountSid + '/Messages.json',
+      'auth' : config.twilio.accountSid + ':' + config.twilio.authToken,
       'headers' : {
         'Content-Type' : 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(stringPayload)
@@ -83,11 +83,11 @@ helpers.sendTwilioSms = function(phone,msg,callback){
     };
 
     // Instantiate the request object
-    var req = https.request(requestDetails,function(res){
+    var req = https.request(requestDetails, function(res) {
         // Grab the status of the sent request
         var status =  res.statusCode;
         // Callback successfully if the request went through
-        if(status == 200 || status == 201){
+        if(status == 200 || status == 201) {
           callback(false);
         } else {
           callback('Status code returned was '+status);
@@ -95,7 +95,7 @@ helpers.sendTwilioSms = function(phone,msg,callback){
     });
 
     // Bind to the error event so it doesn't get thrown
-    req.on('error',function(e){
+    req.on('error',function(e) {
       callback(e);
     });
 
@@ -109,7 +109,6 @@ helpers.sendTwilioSms = function(phone,msg,callback){
     callback('Given parameters were missing or invalid');
   }
 };
-
 
 // Export the module
 module.exports = helpers;
