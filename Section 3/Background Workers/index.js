@@ -1,7 +1,7 @@
 /*
  * Primary file for API
  *
- */
+*/
 
 // Dependencies
 var server = require('./lib/server');
@@ -23,7 +23,6 @@ app.init = function(){
 
 // Self executing
 app.init();
-
 
 // Export the app
 module.exports = app;

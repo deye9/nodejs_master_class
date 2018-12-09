@@ -1,7 +1,7 @@
 /*
  * Request Handlers
  *
- */
+*/
 
 // Dependencies
 var _data = require('./data');
@@ -352,7 +352,6 @@ handlers._tokens.put = function(data,callback){
   }
 };
 
-
 // Tokens - delete
 // Required data: id
 // Optional data: none
@@ -409,7 +408,6 @@ handlers.checks = function(data,callback){
 
 // Container for all the checks methods
 handlers._checks  = {};
-
 
 // Checks - post
 // Required data: protocol,url,method,successCodes,timeoutSeconds
@@ -592,7 +590,6 @@ handlers._checks.put = function(data,callback){
   }
 };
 
-
 // Checks - delete
 // Required data: id
 // Optional data: none
@@ -653,7 +650,6 @@ handlers._checks.delete = function(data,callback){
     callback(400,{"Error" : "Missing valid id"});
   }
 };
-
 
 // Export the handlers
 module.exports = handlers;

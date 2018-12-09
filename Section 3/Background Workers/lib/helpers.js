@@ -1,7 +1,7 @@
 /*
  * Helpers for various tasks
  *
- */
+*/
 
 // Dependencies
 var config = require('./config');
@@ -109,7 +109,6 @@ helpers.sendTwilioSms = function(phone,msg,callback){
     callback('Given parameters were missing or invalid');
   }
 };
-
 
 // Export the module
 module.exports = helpers;

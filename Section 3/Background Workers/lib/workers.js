@@ -4,13 +4,13 @@
  */
 
  // Dependencies
-var path = require('path');
 var fs = require('fs');
-var _data = require('./data');
-var https = require('https');
-var http = require('http');
-var helpers = require('./helpers');
 var url = require('url');
+var path = require('path');
+var http = require('http');
+var https = require('https');
+var _data = require('./data');
+var helpers = require('./helpers');
 
 // Instantiate the worker module object
 var workers = {};
@@ -35,8 +35,6 @@ workers.gatherAllChecks = function(){
       console.log('Error: Could not find any checks to process');
     }
   });
-
-
 };
 
 // Sanity-check the check-data,
@@ -191,6 +189,5 @@ workers.init = function(){
   workers.loop();
 };
 
-
- // Export the module
- module.exports = workers;
+// Export the module
+module.exports = workers;
