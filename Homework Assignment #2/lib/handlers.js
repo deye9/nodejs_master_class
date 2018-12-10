@@ -33,12 +33,12 @@ handlers._users = {};
 // Optional data: none
 handlers._users.post = function (data, callback) {
   // Check that all required fields are filled out
-  var email = typeof (data.payload.email) == 'string' && data.payload.email.trim().length > 0 ? data.payload.email.trim() : false;
   var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
   var lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
   var password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
   var firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
   var streetAddress = typeof (data.payload.streetAddress) == 'string' && data.payload.streetAddress.trim().length > 0 ? data.payload.streetAddress.trim() : false;
+  var email = typeof data.payload.email === 'string' && data.payload.email.trim().length > 0 && data.payload.email.includes('@') && data.payload.email.includes('.') ? data.payload.email.trim() : false;
 
   if (firstName && lastName && phone && password && streetAddress && email) {
 
@@ -138,11 +138,11 @@ handlers._users.put = function (data, callback) {
   var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
 
   // Check for optional fields
-  var email = typeof (data.payload.email) == 'string' && data.payload.email.trim().length > 0 ? data.payload.email.trim() : false;
   var lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
   var password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
   var firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
   var streetAddress = typeof (data.payload.streetAddress) == 'string' && data.payload.streetAddress.trim().length > 0 ? data.payload.streetAddress.trim() : false;
+  var email = typeof data.payload.email === 'string' && data.payload.email.trim().length > 0 && data.payload.email.includes('@') && data.payload.email.includes('.') ? data.payload.email.trim() : false;
 
   // Error if phone is invalid
   if (phone) {
@@ -781,10 +781,86 @@ handlers._cart.delete = function (data, callback) {
   }
 };
 
-
+// Checkout - Only accepts a POST
+// Required data: email, orderid, card number, expiry Year, Expiry Month and CVV
 handlers.checkout = function (data, callback) {
   if (data.method === 'post') {
-  
+    var total = 0;
+    var cvv = typeof data.payload.cvv === 'string' && data.payload.cvv.trim().length === 3 ? data.payload.cvv.trim() : false;
+    var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
+    var orderId = typeof data.payload.orderId === 'string' && data.payload.orderId.trim().length === 10 ? data.payload.orderId.trim() : false;
+    var expiryYear = typeof data.payload.expiryYear === 'string' && data.payload.expiryYear.trim().length === 4 ? data.payload.expiryYear.trim() : false;
+    var expiryMonth = typeof data.payload.expiryMonth === 'string' && data.payload.expiryMonth.trim().length === 2 ? data.payload.expiryMonth.trim() : false;
+    var cardNumber = typeof data.payload.cardNumber === 'string' && data.payload.cardNumber.trim().length > 10 && data.payload.cardNumber.trim().length < 17 ? data.payload.cardNumber.trim() : false;
+    var email = typeof data.payload.email === 'string' && data.payload.email.trim().length > 0 && data.payload.email.includes('@') && data.payload.email.includes('.') ? data.payload.email.trim() : false;
+
+    if (email && orderId && cardNumber && expiryYear && expiryMonth && cvv && phone) {
+
+      // Check to ensure card is still valid.
+      var month = new Date().getMonth();
+      var year = new Date().getFullYear();
+
+      if (year < Number(expiryYear) || (year === Number(expiryYear) && month < Number(expiryMonth))) {
+
+        // Confirm that token provided is valid and belongs to the user
+        var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+        handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+
+          if (tokenIsValid) {
+
+            // check the shopping cart to ensure amount entered by customer matches amount on cart
+            _data.read('cart', orderId, function (err, data) {
+
+              if (!err && data) {
+                // Loop through to calculate the total due for Payment.
+                data.forEach(function(cartItems) {
+                  var _quantity = typeof(cartItems.quantity) == 'number' && cartItems.quantity >= 1 ? cartItems.quantity : false;
+                  var _price = typeof (cartItems.price) == 'string' && cartItems.price.trim().length > 0 ? cartItems.price.trim() : false;
+                  total += parseInt(_price.replace('₦', '')) * _quantity;
+                });
+
+                // check to ensure we have a valid amount to pay
+                if (total) {
+
+                  // Call function to charge card with stripe api
+                  helpers.makeStripeCharge(email, total, err => {
+
+                    if (!err) {
+                      console.log('Your credit card with number ' + cardNumber + ' has been charged ₦' + total + ' for your pizza order. Thank you for your patronage!');
+
+                      // Call function to send receipt to customer's email address
+                      helpers.sendEmail(email, total, orderId, err => {
+                        if (!err) {
+                          callback(200, {"Message": "Email with order receipt successfully sent to " + email + " !"});
+                        } else {
+                          callback(500, { 'Error': 'Could not send email with receipt to customer' });
+                        }
+                      });
+                    } else {
+                      callback(500, { 'Error': 'Could not process charge' });
+                    }
+                  });
+                } else {
+                  callback(400, { 'Error': 'Amount on shopping cart does not match amount entered by customer' });
+                }
+              } else {
+                callback(400, { 'Error': 'Could not read the user\'s shopping cart' });
+              }
+            });
+
+          } else {
+            callback(403, { 'Error': 'Please provide valid token' });
+          }
+        });
+      } else {
+        callback(400, { 'Error': 'Credit card has expired. Please provide valid card for payment' });
+      }
+    } else {
+      callback(400, { 'Error': 'Required fields not provided' });
+    }
+  } else {
+    callback(405, { 'Error': 'Selected method is not allowed' });
   }
 };
 

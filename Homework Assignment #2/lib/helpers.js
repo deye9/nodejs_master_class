@@ -96,5 +96,60 @@ helpers.sendEmail = function (email, charge, orderId, callback) {
   req.end();
 };
 
+helpers.makeStripeCharge = function (email, charge, callback) {
+
+  if (email && charge) {
+
+    // Define charge parameters
+    var chargeData = {
+      "amount": charge,
+      "currency": "usd",
+      "source": process.env.stripe_source,
+      "description": "charge for" + email,
+    };
+
+    //stringify the data for making the request
+    var stringData = querystring.stringify(chargeData);
+
+    //craft the api request
+    var request = {
+      "protocol": "https:",
+      "hostname": "api.stripe.com",
+      "method": "POST",
+      "path": "/v1/charges",
+      "auth": process.env.STRIPE_API_KEY,
+      "headers": {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(stringData)
+      }
+    };
+
+    //make the request using the https protocol
+    req = https.request(request, (res) => {
+      res.setEncoding('utf8');
+      res.on('data', (data) => {
+        var responseObject = helpers.parseJsonToObject(data);
+        if (responseObject.id) {
+          callback(false, responseObject.id);
+        } else {
+          callback('Request not successful; could not get id from request ID from stripe');
+        }
+      });
+    });
+
+    //bind the error event to prevent throwing
+    req.on('error', (e) => {
+      callback(e);
+    });
+
+    req.write(stringData);
+
+    req.end();
+
+  } else {
+    callback("No email and charge provided");
+  }
+};
+
 // Export the module
 module.exports = helpers;
