@@ -52,24 +52,24 @@ helpers.createRandomString = function (strLength) {
   }
 };
 
-helpers.sendEmail = function (email, charge, orderId, cb) {
-  var message = 'Your pizza order with orderId: ' + orderId + ' and cost of $' + charge + ' has been successfully charged to your credit card. Thank you for your continued patronage. Best Pizzas!';
+helpers.sendEmail = function (email, charge, orderId, callback) {
+  var message = 'Your pizza order {' + orderId + '} totalling ₦' + charge + ' has been successfully charged to your credit card. Thank you.';
 
-  //stringify parameters for making api call
+  // stringify parameters for making the api call
   var emailData = querystring.stringify({
-    'from': 'postmaster@' + process.env.mailGun_domainName,
     'to': email,
-    'subject': 'Pizza order Receipt. Id: ' + orderId,
     'text': message,
+    'from': 'postmaster@pizzaapp.com',
+    'subject': 'Pizza order Receipt ' + orderId,
   });
 
-  //craft the api call
+  // Build out the api Request Object
   var request = {
+    'method': 'POST',
     'protocol': 'https:',
     'hostname': 'api.mailgun.net',
-    'method': 'POST',
-    'path': '/v3/'+ process.env.mailGun_domainName+'/messages',
     'auth': process.env.MAILGUN_API_KEY,
+    'path': '/v3/'+ process.env.mailGun_domainName+'/messages',
     'headers': {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Content-Length': Buffer.byteLength(emailData)
@@ -78,16 +78,15 @@ helpers.sendEmail = function (email, charge, orderId, cb) {
 
   var req = https.request(request, function (res) {
     var status = res.statusCode;
-
     if (status === 200 || status === 201) {
-      cb(false);
+      callback(false);
     } else {
-      cb('Status code returned ' + status);
+      callback('Status code returned ' + status);
     }
   });
 
-  req.on('error', (e) => {
-    cb(e);
+  req.on('error', (err) => {
+    callback(err);
   });
 
   req.write(emailData);
