@@ -108,7 +108,7 @@ handlers._users.get = function(data,callback){
           }
         });
       } else {
-        callback(403,{"Error" : "Missing required token in header, or token is invalid."})
+        callback(403,{"Error" : "Missing required token in header, or token is invalid."});
       }
     });
   } else {
