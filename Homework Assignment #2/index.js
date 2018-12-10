@@ -105,5 +105,5 @@ var router = {
   'menus': handlers.menus,
   'users': handlers.users,
   'tokens' : handlers.tokens,
-  // 'checkout': handlers.checkout
+  'checkout': handlers.checkout
 };

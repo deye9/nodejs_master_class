@@ -29,17 +29,18 @@ handlers.users = function (data, callback) {
 handlers._users = {};
 
 // Users - post
-// Required data: firstName, lastName, phone, password, streetAddress
+// Required data: firstName, lastName, phone, password, streetAddress, email
 // Optional data: none
 handlers._users.post = function (data, callback) {
   // Check that all required fields are filled out
+  var email = typeof (data.payload.email) == 'string' && data.payload.email.trim().length > 0 ? data.payload.email.trim() : false;
   var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
   var lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
   var password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
   var firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
   var streetAddress = typeof (data.payload.streetAddress) == 'string' && data.payload.streetAddress.trim().length > 0 ? data.payload.streetAddress.trim() : false;
 
-  if (firstName && lastName && phone && password && streetAddress) {
+  if (firstName && lastName && phone && password && streetAddress && email) {
 
     // Make sure the user doesnt already exist
     _data.read('users', phone, function (err, data) {
@@ -52,6 +53,7 @@ handlers._users.post = function (data, callback) {
         // Create the user object
         if (hashedPassword) {
           var userObject = {
+            'email': email,
             'phone': phone,
             'lastName': lastName,
             'firstName': firstName,
@@ -130,12 +132,13 @@ handlers._users.get = function (data, callback) {
 };
 
 // Required data: phone
-// Optional data: firstName, lastName, password (at least one must be specified)
+// Optional data: firstName, lastName, password, email (at least one must be specified)
 handlers._users.put = function (data, callback) {
   // Check for required field
   var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
 
   // Check for optional fields
+  var email = typeof (data.payload.email) == 'string' && data.payload.email.trim().length > 0 ? data.payload.email.trim() : false;
   var lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
   var password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
   var firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
@@ -144,7 +147,7 @@ handlers._users.put = function (data, callback) {
   // Error if phone is invalid
   if (phone) {
     // Error if nothing is sent to update
-    if (firstName || lastName || password || streetAddress) {
+    if (firstName || lastName || password || streetAddress || email) {
 
       // Get token from headers
       var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
@@ -172,6 +175,10 @@ handlers._users.put = function (data, callback) {
 
               if (streetAddress) {
                 userData.streetAddress = streetAddress;
+              }
+
+              if (email) {
+                userData.email = email;
               }
               // Store the new updates
               _data.update('users', phone, userData, function (err) {
@@ -465,7 +472,9 @@ handlers._menus.post = function (data, callback) {
     if (_name && _price && _category && _phone) { 
       isValid = true; phone = _phone; category = _category; 
       delete menu.phone; delete menu.category;
-     }
+    } else {
+      isValid = false;
+    }
   });
 
   if (isValid) {
@@ -561,24 +570,29 @@ handlers._cart = {};
 // Required data: name, price, quantity, token, phone
 // Optional data: none
 handlers._cart.post = function (data, callback) {
+  var total = 0;
   var phone = false;
   var isValid = false;
 
   // Validate the data.
   data.payload.forEach(function(menu) {
-    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity > 1 ? menu.quantity : false;
+    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity >= 1 ? menu.quantity : false;
     var _name = typeof (menu.name) == 'string' && menu.name.trim().length > 0 ? menu.name.trim() : false;
     var _price = typeof (menu.price) == 'string' && menu.price.trim().length > 0 ? menu.price.trim() : false;
     var _phone = typeof (menu.phone) == 'string' && menu.phone.trim().length == 10 ? menu.phone.trim() : false;
     delete menu.phone;
 
     if (_name && _price && _quantity && _phone) { 
-      isValid = true; phone = _phone; 
+      isValid = true; phone = _phone;
+      total += parseInt(_price.replace('₦', '')) * _quantity;
+     } else {
+       isValid = false;
      }
   });
 
   if (isValid) {
   
+    var orderId = helpers.createRandomString(10);
     // Get token from headers
     var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
@@ -589,12 +603,17 @@ handlers._cart.post = function (data, callback) {
 
         // Make sure the user exists.
         _data.read('users', phone, function (err, userData) {
-
           if (!err && userData) {
             // Write the data as requested.
-            _data.create('cart', phone, data.payload, function (err) {
+            _data.create('cart', orderId, data.payload, function (err) {
               if (!err) {
-                callback(200);
+                helpers.sendEmail(userData.email, total, orderId, function(error) {
+                  if (error) {
+                    callback(500, { 'Error': 'Error sending order to email Address ' + userData.email });
+                  } else {
+                    callback(200, { 'message': 'Order successfully added to the cart.' , 'email': userData.email, 'total': '₦' + total.toString(), "orderId": orderId });
+                  }
+                });
               } else {
                 callback(500, { 'Error': 'Order already exists.' });
               }
@@ -651,27 +670,35 @@ handlers._cart.get = function (data, callback) {
 };
 
 // Cart - put
-// Required data: phone, token
+// Required data: phone, token, orderid
 // Optional data: name, price, quantity (at least one must be specified)
 handlers._cart.put = function (data, callback) {
+  var total = 0;
+  var orderId = '';
   var phone = false;
   var isValid = false;
 
   // Validate the data.
   data.payload.forEach(function(menu) {
-    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity > 1 ? menu.quantity : false;
+    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity >= 1 ? menu.quantity : false;
     var _name = typeof (menu.name) == 'string' && menu.name.trim().length > 0 ? menu.name.trim() : false;
     var _price = typeof (menu.price) == 'string' && menu.price.trim().length > 0 ? menu.price.trim() : false;
     var _phone = typeof (menu.phone) == 'string' && menu.phone.trim().length == 10 ? menu.phone.trim() : false;
-    delete menu.phone;
+    var _orderID = typeof (menu.orderid) == 'string' && menu.orderid.trim().length == 10 ? menu.orderid.trim() : false;
+
+    delete menu.phone; delete menu.orderid;
 
     if (_name && _price && _quantity && _phone) { 
-      isValid = true; phone = _phone; 
+      isValid = true; phone = _phone; orderId = _orderID;
+      total += parseInt(_price.replace('₦', '')) * _quantity;
+     } else {
+      isValid = false;
      }
   });
 
   // Proceed if payload is valid.
   if (isValid) {
+
     // Get token from headers
     var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
@@ -679,16 +706,30 @@ handlers._cart.put = function (data, callback) {
     handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
 
       if (tokenIsValid) {
-          // Store the new updates
-          _data.update('cart', phone, data.payload, function (err) {
-            if (!err) {
-              callback(200);
-            } else {
-              callback(500, {
-                'Error': 'Could not update the cart.'
-              });
-            }
-          });
+
+        // Make sure the user exists.
+        _data.read('users', phone, function (err, userData) {
+          if (!err && userData) {
+            // Store the new updates
+            _data.update('cart', orderId, data.payload, function (err) {
+              if (!err) {
+                helpers.sendEmail(userData.email, total, orderId, function(error) {
+                  if (error) {
+                    callback(500, { 'Error': 'Error sending order to email Address ' + userData.email });
+                  } else {
+                    callback(200, { 'message': 'Order successfully added to the cart.' , 'email': userData.email, 'total': '₦' + total.toString(), "orderId": orderId });
+                  }
+                });
+              } else {
+                callback(500, {
+                  'Error': 'Could not update the cart.'
+                });
+              }
+            });
+          } else {
+            callback(400, { 'Error': 'Specified user does not exist.' });
+          }
+        });
       } else {
         callback(403, {
           "Error": "Missing required token in header, or token is invalid."
@@ -737,6 +778,13 @@ handlers._cart.delete = function (data, callback) {
     callback(400, {
       'Error': 'Missing required field'
     });
+  }
+};
+
+
+handlers.checkout = function (data, callback) {
+  if (data.method === 'post') {
+  
   }
 };
 

@@ -4,8 +4,10 @@
  */
 
 // Dependencies
+var https = require('https');
 var crypto = require('crypto');
 var config = require('./config');
+var querystring = require("querystring");
 
 // Container for all the helpers
 var helpers = {};
@@ -81,7 +83,7 @@ helpers.sendEmail = function (email, charge, orderId, callback) {
     if (status === 200 || status === 201) {
       callback(false);
     } else {
-      callback('Status code returned ' + status);
+      callback(true);
     }
   });
 
