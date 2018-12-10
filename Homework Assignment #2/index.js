@@ -101,9 +101,9 @@ var unifiedServer = function (req, res) {
 
 // Define the request router
 var router = {
+  'cart': handlers.cart,
+  'menus': handlers.menus,
   'users': handlers.users,
   'tokens' : handlers.tokens,
-  'menus': handlers.menus,
-  // 'shop': handlers.shop,
   // 'checkout': handlers.checkout
 };

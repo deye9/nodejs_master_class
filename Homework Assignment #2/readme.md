@@ -14,7 +14,7 @@
 
 6. When an order is placed, you should email the user a receipt. You should integrate with the sandbox of Mailgun.com for this. Note: Every Mailgun account comes with a sandbox email account domain (whatever@sandbox123.mailgun.org) that you can send from by default. So, there's no need to setup any DNS for your domain for this task https://documentation.mailgun.com/en/latest/faqs.html#how-do-i-pick-a-domain-name-for-my-mailgun-account.
 
-For Menu's two http verbs are exposed.
-1. POST: Which expect an array of JSON Objects e.g `[{"name":"CHICKEN SUYA","price":"₦1500.00","phone":"1234567890","category":"Breakfast"},{"name":"MEATPIE","price":"₦2500.00","phone":"1234567890","category":"Breakfast"},{"name":"CHICKEN TIKKA","price":"₦3500.00","phone":"1234567890","category":"Breakfast"}]`
+For Menu's two HTTP verbs are exposed.
+> 1. POST: Which expect an array of JSON Objects e.g `[{"name":"CHICKEN SUYA","price":"₦1500.00","phone":"1234567890","category":"Breakfast"},{"name":"MEATPIE","price":"₦2500.00","phone":"1234567890","category":"Breakfast"},{"name":"CHICKEN TIKKA","price":"₦3500.00","phone":"1234567890","category":"Breakfast"}]`
 
-2. GET: To retrieve a list of all available Menu's for the Category specified.
+> 2. GET: To retrieve a list of all available Menu's for the Category specified. `['breakfast', 'lunch', 'dinner']`

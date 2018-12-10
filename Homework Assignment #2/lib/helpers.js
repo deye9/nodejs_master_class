@@ -52,5 +52,48 @@ helpers.createRandomString = function (strLength) {
   }
 };
 
+helpers.sendEmail = function (email, charge, orderId, cb) {
+  var message = 'Your pizza order with orderId: ' + orderId + ' and cost of $' + charge + ' has been successfully charged to your credit card. Thank you for your continued patronage. Best Pizzas!';
+
+  //stringify parameters for making api call
+  var emailData = querystring.stringify({
+    'from': 'postmaster@' + process.env.mailGun_domainName,
+    'to': email,
+    'subject': 'Pizza order Receipt. Id: ' + orderId,
+    'text': message,
+  });
+
+  //craft the api call
+  var request = {
+    'protocol': 'https:',
+    'hostname': 'api.mailgun.net',
+    'method': 'POST',
+    'path': '/v3/'+ process.env.mailGun_domainName+'/messages',
+    'auth': process.env.MAILGUN_API_KEY,
+    'headers': {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(emailData)
+    }
+  };
+
+  var req = https.request(request, function (res) {
+    var status = res.statusCode;
+
+    if (status === 200 || status === 201) {
+      cb(false);
+    } else {
+      cb('Status code returned ' + status);
+    }
+  });
+
+  req.on('error', (e) => {
+    cb(e);
+  });
+
+  req.write(emailData);
+
+  req.end();
+};
+
 // Export the module
 module.exports = helpers;

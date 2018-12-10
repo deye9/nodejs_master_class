@@ -132,7 +132,6 @@ handlers._users.get = function (data, callback) {
 // Required data: phone
 // Optional data: firstName, lastName, password (at least one must be specified)
 handlers._users.put = function (data, callback) {
-
   // Check for required field
   var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
 
@@ -206,7 +205,6 @@ handlers._users.put = function (data, callback) {
       'Error': 'Missing required field.'
     });
   }
-
 };
 
 // Required data: phone
@@ -439,7 +437,7 @@ handlers._tokens.verifyToken = function (id, phone, callback) {
 
 // Menus
 handlers.menus = function (data, callback) {
-  var acceptableMethods = ['post', 'get', 'put', 'delete'];
+  var acceptableMethods = ['get', 'post'];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._menus[data.method](data, callback);
   } else {
@@ -451,7 +449,7 @@ handlers.menus = function (data, callback) {
 handlers._menus = {};
 
 // Menus - post
-// Required data: Pizza name, Pizza price, category [Breakfast, Lunch], phone, token
+// Required data: Pizza name, Pizza price, category [Breakfast, Lunch, Dinner], phone, token
 // Optional data: none
 handlers._menus.post = function (data, callback) {
   var phone = false;
@@ -463,7 +461,7 @@ handlers._menus.post = function (data, callback) {
     var _name = typeof (menu.name) == 'string' && menu.name.trim().length > 0 ? menu.name.trim() : false;
     var _price = typeof (menu.price) == 'string' && menu.price.trim().length > 0 ? menu.price.trim() : false;
     var _phone = typeof (menu.phone) == 'string' && menu.phone.trim().length == 10 ? menu.phone.trim() : false;
-    var _category = typeof(menu.category) == 'string' && ['breakfast', 'dinner'].indexOf(menu.category.toLowerCase()) > -1 ? menu.category.toLowerCase() : false;
+    var _category = typeof(menu.category) == 'string' && ['breakfast', 'lunch', 'dinner'].indexOf(menu.category.toLowerCase()) > -1 ? menu.category.toLowerCase() : false;
     if (_name && _price && _category && _phone) { 
       isValid = true; phone = _phone; category = _category; 
       delete menu.phone; delete menu.category;
@@ -480,7 +478,7 @@ handlers._menus.post = function (data, callback) {
 
       if (tokenIsValid) {
 
-        // Make sure the menu does not exist.
+        // Make sure the user exists.
         _data.read('users', phone, function (err, userData) {
 
           if (!err && userData) {
@@ -504,6 +502,241 @@ handlers._menus.post = function (data, callback) {
     callback(400, { 
       'Error': 'Missing fields to update.'
    });
+  }
+};
+
+// Menus - get
+// Required data: category [Breakfast, Lunch, Dinner], phone, token
+// Optional data: none
+handlers._menus.get = function (data, callback) {
+
+  // Perform Validations
+  var phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 10 ? data.queryStringObject.phone.trim() : false;
+  var category = typeof(data.queryStringObject.category) == 'string' && ['breakfast', 'lunch', 'dinner'].indexOf(data.queryStringObject.category.toLowerCase()) > -1 ? data.queryStringObject.category.toLowerCase() : false;
+
+  if (phone && category) {
+  
+    // Get token from headers
+    var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the phone number
+    handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+
+      if (tokenIsValid) {
+         // Lookup the menu
+         _data.read('menu', category, function (err, data) {
+          if (!err && data) {
+            callback(200, data);
+          } else {
+            callback(404);
+          }
+        });
+
+      } else {
+        callback(403, { "Error": "Missing required token in header, or token is invalid." });
+      }
+    });
+  } else {
+    callback(400, { 
+      'Error': 'Missing fields to update.'
+   });
+  }
+};
+
+
+// Cart
+handlers.cart = function (data, callback) {
+  var acceptableMethods = ['get', 'post', 'put', 'delete'];
+  if (acceptableMethods.indexOf(data.method) > -1) {
+    handlers._cart[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the cart methods
+handlers._cart = {};
+
+// Cart - post
+// Required data: name, price, quantity, token, phone
+// Optional data: none
+handlers._cart.post = function (data, callback) {
+  var phone = false;
+  var isValid = false;
+
+  // Validate the data.
+  data.payload.forEach(function(menu) {
+    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity > 1 ? menu.quantity : false;
+    var _name = typeof (menu.name) == 'string' && menu.name.trim().length > 0 ? menu.name.trim() : false;
+    var _price = typeof (menu.price) == 'string' && menu.price.trim().length > 0 ? menu.price.trim() : false;
+    var _phone = typeof (menu.phone) == 'string' && menu.phone.trim().length == 10 ? menu.phone.trim() : false;
+    delete menu.phone;
+
+    if (_name && _price && _quantity && _phone) { 
+      isValid = true; phone = _phone; 
+     }
+  });
+
+  if (isValid) {
+  
+    // Get token from headers
+    var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the phone number
+    handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+
+      if (tokenIsValid) {
+
+        // Make sure the user exists.
+        _data.read('users', phone, function (err, userData) {
+
+          if (!err && userData) {
+            // Write the data as requested.
+            _data.create('cart', phone, data.payload, function (err) {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(500, { 'Error': 'Order already exists.' });
+              }
+            });
+          } else {
+            callback(400, { 'Error': 'Specified user does not exist.' });
+          }
+        });
+      } else {
+        callback(403, { "Error": "Missing required token in header, or token is invalid." });
+      }
+    });
+  } else {
+    callback(400, { 
+      'Error': 'Missing fields to update.'
+   });
+  }
+};
+
+// Cart - get
+// Required data: phone, token
+// Optional data: none
+handlers._cart.get = function (data, callback) {
+  // Perform Validations
+  var phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 10 ? data.queryStringObject.phone.trim() : false;
+
+  if (phone) {
+  
+    // Get token from headers
+    var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the phone number
+    handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+
+      if (tokenIsValid) {
+         // Lookup the Cart
+         _data.read('cart', phone, function (err, data) {
+          if (!err && data) {
+            callback(200, data);
+          } else {
+            callback(404);
+          }
+        });
+
+      } else {
+        callback(403, { "Error": "Missing required token in header, or token is invalid." });
+      }
+    });
+  } else {
+    callback(400, { 
+      'Error': 'Missing fields to update.'
+   });
+  }
+};
+
+// Cart - put
+// Required data: phone, token
+// Optional data: name, price, quantity (at least one must be specified)
+handlers._cart.put = function (data, callback) {
+  var phone = false;
+  var isValid = false;
+
+  // Validate the data.
+  data.payload.forEach(function(menu) {
+    var _quantity = typeof(menu.quantity) == 'number' && menu.quantity > 1 ? menu.quantity : false;
+    var _name = typeof (menu.name) == 'string' && menu.name.trim().length > 0 ? menu.name.trim() : false;
+    var _price = typeof (menu.price) == 'string' && menu.price.trim().length > 0 ? menu.price.trim() : false;
+    var _phone = typeof (menu.phone) == 'string' && menu.phone.trim().length == 10 ? menu.phone.trim() : false;
+    delete menu.phone;
+
+    if (_name && _price && _quantity && _phone) { 
+      isValid = true; phone = _phone; 
+     }
+  });
+
+  // Proceed if payload is valid.
+  if (isValid) {
+    // Get token from headers
+    var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the phone number
+    handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+
+      if (tokenIsValid) {
+          // Store the new updates
+          _data.update('cart', phone, data.payload, function (err) {
+            if (!err) {
+              callback(200);
+            } else {
+              callback(500, {
+                'Error': 'Could not update the cart.'
+              });
+            }
+          });
+      } else {
+        callback(403, {
+          "Error": "Missing required token in header, or token is invalid."
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      'Error': 'Missing fields to update.'
+    });
+  }
+};
+
+// Cart - delete
+// Required data: phone, token
+// Optional data: none
+handlers._cart.delete = function (data, callback) {
+  
+  // Check that phone number is valid
+  var phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 10 ? data.queryStringObject.phone.trim() : false;
+
+  if (phone) {
+    // Get token from headers
+    var token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the phone number
+    handlers._tokens.verifyToken(token, phone, function (tokenIsValid) {
+      if (tokenIsValid) {
+        // Lookup the cart
+        _data.delete('cart', phone, function (err) {
+          if (!err) {
+            callback(200);
+          } else {
+            callback(500, {
+              'Error': 'Could not delete the specified cart'
+            });
+          }
+        });
+      } else {
+        callback(403, {
+          "Error": "Missing required token in header, or token is invalid."
+        });
+      }
+    });
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    });
   }
 };
 
