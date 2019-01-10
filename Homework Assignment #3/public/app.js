@@ -26,8 +26,8 @@ app.client.request = function (headers, path, method, queryStringObject, payload
   callback = typeof (callback) == 'function' ? callback : false;
 
   // For each query string parameter sent, add it to the path
-  var counter = 0;
   var requestUrl = path + '?';
+  var counter = 0;
   for (var queryKey in queryStringObject) {
     if (queryStringObject.hasOwnProperty(queryKey)) {
       counter++;
@@ -74,7 +74,7 @@ app.client.request = function (headers, path, method, queryStringObject, payload
 
       }
     }
-  };
+  }
 
   // Send the payload as JSON
   var payloadString = JSON.stringify(payload);
@@ -125,7 +125,7 @@ app.bindForms = function () {
 
     var allForms = document.querySelectorAll("form");
     for (var i = 0; i < allForms.length; i++) {
-      allForms[i].addEventListener("submit", function(e) {
+      allForms[i].addEventListener("submit", function (e) {
 
         // Stop it from submitting
         e.preventDefault();
@@ -175,6 +175,10 @@ app.bindForms = function () {
 
             }
           }
+        }
+
+        if (app.config.sessionToken.phone !== undefined) {
+          payload['phone'] = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
         }
 
         // If the method is DELETE, the payload should be a queryStringObject instead
@@ -239,7 +243,6 @@ app.formResponseProcessor = function (formId, requestPayload, responsePayload) {
       }
     });
   }
-  
   // If login was successful, set the token in localstorage and redirect the user
   if (formId == 'sessionCreate') {
     app.setSessionToken(responsePayload);
@@ -361,12 +364,12 @@ app.loadDataOnPage = function () {
 
   // Logic for dashboard page
   if (primaryClass == 'checksList') {
-    app.loadChecksListPage();
+    app.loadMenuListPage();
   }
 
   // Logic for check details page
   if (primaryClass == 'checksEdit') {
-    app.loadChecksEditPage();
+    app.loadCartEditPage();
   }
 };
 
@@ -403,63 +406,50 @@ app.loadAccountEditPage = function () {
 };
 
 // Load the dashboard page specifically
-app.loadChecksListPage = function () {
+app.loadMenuListPage = function () {
   // Get the phone number from the current token, or log the user out if none is there
   var phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+
   if (phone) {
     // Fetch the user data
     var queryStringObject = {
-      'phone': phone
+      'phone': phone,
+      'category': 'breakfast'
     };
-    app.client.request(undefined, 'api/users', 'GET', queryStringObject, undefined, function (statusCode, responsePayload) {
+
+    app.client.request(undefined, 'api/menu', 'GET', queryStringObject, undefined, function (statusCode, responsePayload) {
+
       if (statusCode == 200) {
+        // Vet Menu data
+        var allMenus = typeof (responsePayload) == 'object' && responsePayload instanceof Array && responsePayload.length > 0 ? responsePayload : [];
 
-        // Determine how many checks the user has
-        var allChecks = typeof (responsePayload.checks) == 'object' && responsePayload.checks instanceof Array && responsePayload.checks.length > 0 ? responsePayload.checks : [];
-        if (allChecks.length > 0) {
+        if (responsePayload.length > 0) {
 
-          // Show each created check as a new row in the table
-          allChecks.forEach(function (checkId) {
-            // Get the data for the check
-            var newQueryStringObject = {
-              'id': checkId
-            };
-            app.client.request(undefined, 'api/checks', 'GET', newQueryStringObject, undefined, function (statusCode, responsePayload) {
-              if (statusCode == 200) {
-                var checkData = responsePayload;
-                // Make the check data into a table row
-                var table = document.getElementById("checksListTable");
-                var tr = table.insertRow(-1);
-                tr.classList.add('checkRow');
-                var td0 = tr.insertCell(0);
-                var td1 = tr.insertCell(1);
-                var td2 = tr.insertCell(2);
-                var td3 = tr.insertCell(3);
-                var td4 = tr.insertCell(4);
-                td0.innerHTML = responsePayload.method.toUpperCase();
-                td1.innerHTML = responsePayload.protocol + '://';
-                td2.innerHTML = responsePayload.url;
-                var state = typeof (responsePayload.state) == 'string' ? responsePayload.state : 'unknown';
-                td3.innerHTML = state;
-                td4.innerHTML = '<a href="/checks/edit?id=' + responsePayload.id + '">View / Edit / Delete</a>';
-              } else {
-                console.log("Error trying to load check ID: ", checkId);
-              }
-            });
-          });
-
-          if (allChecks.length < 5) {
-            // Show the createCheck CTA
-            document.getElementById("createCheckCTA").style.display = 'block';
+          // Make the check data into a table row
+          var table = document.getElementById("MenuListTable");
+          for (var i = 0; i < responsePayload.length; i++) {
+            var tr = table.insertRow(-1);
+            tr.classList.add('checkRow');
+            var td0 = tr.insertCell(0);
+            var td1 = tr.insertCell(1);
+            var td2 = tr.insertCell(2);
+            var td3 = tr.insertCell(3);
+            td0.innerHTML = i + 1;
+            td1.innerHTML = responsePayload[i].name;
+            td2.innerHTML = responsePayload[i].price;
+            td3.innerHTML = '<input type="number" id="' + responsePayload[i].id + '" name="' + responsePayload[i].id + '" value="1" data-details=\'' + JSON.stringify(responsePayload[i]) + '\'>';
           }
 
+          // Show the createCheck CTA
+          document.getElementById("createCheckCTA").style.display = 'block';
+          document.getElementById("createCheckCTA").innerHTML += '<a class="cta blue" onclick="AddtoCart();">Add to Cart</a>';
+
         } else {
-          // Show 'you have no checks' message
+          // Show 'Kindly create menus for Users!' message
           document.getElementById("noChecksMessage").style.display = 'table-row';
 
           // Show the createCheck CTA
           document.getElementById("createCheckCTA").style.display = 'block';
-
         }
       } else {
         // If the request comes back as something other than 200, log the user our (on the assumption that the api is temporarily down or the users token is bad)
@@ -471,45 +461,196 @@ app.loadChecksListPage = function () {
   }
 };
 
+function AddtoCart() {
+  var menus = [];
+  const inputs = document.getElementsByTagName("input");
+  for (let input of inputs) {
+    if (input.value >= 1) {
+      const menudetail = JSON.parse(input.dataset.details);
+      delete menudetail.id;
+      menudetail.quantity = parseInt(input.value);
+      menudetail.phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+      menus.push(menudetail);
+    }
+  }
+
+  app.client.request(undefined, 'api/cart', 'POST', undefined, menus, function (statusCode, responsePayload) {
+    if (statusCode == 200) {
+      for (let input of inputs) {
+        input.value = 0;
+      }
+      // Set the formError field with the text
+      document.querySelector(".formError").innerHTML = 'Pizzas added to cart successfully.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'green';
+      document.querySelector(".formError").style.backgroundColor = 'green';
+
+    } else {
+      // Set the formError field with the error text
+      document.querySelector(".formError").innerHTML = 'Sorry, i was unable to add the products to your cart. Please try again.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'red';
+      document.querySelector(".formError").style.backgroundColor = 'red';
+    }
+
+    // Show (unhide) the form error field on the form
+    document.querySelector(".formError").style.color = 'black';
+    document.querySelector(".formError").style.display = 'block';
+  });
+
+}
+
+function UpdateCart() {
+  var menus = [];
+  const inputs = document.getElementsByTagName("input");
+  for (let input of inputs) {
+    if (input.value >= 1) {
+      const menudetail = JSON.parse(input.dataset.details);
+      delete menudetail.id;
+      menudetail.quantity = parseInt(input.value);
+      menudetail.phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+      menus.push(menudetail);
+    }
+  }
+
+  app.client.request(undefined, 'api/cart', 'PUT', undefined, menus, function (statusCode, responsePayload) {
+    if (statusCode == 200) {
+      // Set the formError field with the text
+      document.querySelector(".formError").innerHTML = 'Cart successfully updated.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'green';
+      document.querySelector(".formError").style.backgroundColor = 'green';
+
+    } else {
+      // Set the formError field with the error text
+      document.querySelector(".formError").innerHTML = 'Sorry, i was unable to updated your cart. Please try again.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'red';
+      document.querySelector(".formError").style.backgroundColor = 'red';
+    }
+
+    // Show (unhide) the form error field on the form
+    document.querySelector(".formError").style.color = 'black';
+    document.querySelector(".formError").style.display = 'block';
+  });
+}
+
+function DeleteCart(rowid) {
+  const row = document.getElementById(rowid);
+  row.parentNode.removeChild(row);
+
+  var menus = [];
+  const inputs = document.getElementsByTagName("input");
+  for (let input of inputs) {
+    if (input.value >= 1) {
+      const menudetail = JSON.parse(input.dataset.details);
+      delete menudetail.id;
+      menudetail.quantity = parseInt(input.value);
+      menudetail.phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+      menus.push(menudetail);
+    }
+  }
+
+  app.client.request(undefined, 'api/cart', 'PUT', undefined, menus, function (statusCode, responsePayload) {
+    if (statusCode == 200) {
+      // Set the formError field with the text
+      document.querySelector(".formError").innerHTML = 'Cart successfully updated.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'green';
+      document.querySelector(".formError").style.backgroundColor = 'green';
+
+    } else {
+      // Set the formError field with the error text
+      document.querySelector(".formError").innerHTML = 'Sorry, i was unable to updated your cart. Please try again.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'red';
+      document.querySelector(".formError").style.backgroundColor = 'red';
+    }
+
+    // Show (unhide) the form error field on the form
+    document.querySelector(".formError").style.color = 'black';
+    document.querySelector(".formError").style.display = 'block';
+  });
+}
+
+function ClearCart() {
+  // Get the phone number from the current token, or log the user out if none is there
+  var phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  var queryStringObject = {
+    'phone': phone,
+  };
+  app.client.request(undefined, 'api/cart', 'DELETE', queryStringObject, undefined, function (statusCode, responsePayload) {
+    if (statusCode == 200) {
+      window.location = '/menu/all';
+    } else {
+      // Set the formError field with the error text
+      document.querySelector(".formError").innerHTML = 'Sorry, i was unable to clear your cart. Please try again.';
+
+      // Set the border and backgroundColor's respectively.
+      document.querySelector(".formError").style.borderColor = 'red';
+      document.querySelector(".formError").style.backgroundColor = 'red';
+    }
+
+    // Show (unhide) the form error field on the form
+    document.querySelector(".formError").style.color = 'black';
+    document.querySelector(".formError").style.display = 'block';
+  });
+}
+
+function CheckOut() {
+
+}
 
 // Load the checks edit page specifically
-app.loadChecksEditPage = function () {
-  // Get the check id from the query string, if none is found then redirect back to dashboard
-  var id = typeof (window.location.href.split('=')[1]) == 'string' && window.location.href.split('=')[1].length > 0 ? window.location.href.split('=')[1] : false;
-  if (id) {
+app.loadCartEditPage = function () {
+  // Get the phone number from the current token, or log the user out if none is there
+  var phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  if (phone) {
     // Fetch the check data
     var queryStringObject = {
-      'id': id
+      'phone': phone,
     };
-    app.client.request(undefined, 'api/checks', 'GET', queryStringObject, undefined, function (statusCode, responsePayload) {
+
+    app.client.request(undefined, 'api/cart', 'GET', queryStringObject, undefined, function (statusCode, responsePayload) {
       if (statusCode == 200) {
+        // Vet Data
+        var cartItems = typeof (responsePayload) == 'object' && responsePayload instanceof Array && responsePayload.length > 0 ? responsePayload : [];
+        if (responsePayload.length > 0) {
 
-        // Put the hidden id field into both forms
-        var hiddenIdInputs = document.querySelectorAll("input.hiddenIdInput");
-        for (var i = 0; i < hiddenIdInputs.length; i++) {
-          hiddenIdInputs[i].value = responsePayload.id;
-        }
-
-        // Put the data into the top form as values where needed
-        document.querySelector("#checksEdit1 .displayIdInput").value = responsePayload.id;
-        document.querySelector("#checksEdit1 .displayStateInput").value = responsePayload.state;
-        document.querySelector("#checksEdit1 .protocolInput").value = responsePayload.protocol;
-        document.querySelector("#checksEdit1 .urlInput").value = responsePayload.url;
-        document.querySelector("#checksEdit1 .methodInput").value = responsePayload.method;
-        document.querySelector("#checksEdit1 .timeoutInput").value = responsePayload.timeoutSeconds;
-        var successCodeCheckboxes = document.querySelectorAll("#checksEdit1 input.successCodesInput");
-        for (var i = 0; i < successCodeCheckboxes.length; i++) {
-          if (responsePayload.successCodes.indexOf(parseInt(successCodeCheckboxes[i].value)) > -1) {
-            successCodeCheckboxes[i].checked = true;
+          // Make the check data into a table row
+          var table = document.getElementById("MenuListTable");
+          for (var i = 0; i < responsePayload.length; i++) {
+            var tr = table.insertRow(-1);
+            tr.id = "tr_" + i;
+            tr.classList.add('checkRow');
+            var td0 = tr.insertCell(0);
+            var td1 = tr.insertCell(1);
+            var td2 = tr.insertCell(2);
+            var td3 = tr.insertCell(3);
+            var td4 = tr.insertCell(4);
+            td0.innerHTML = i + 1;
+            td1.innerHTML = responsePayload[i].name;
+            td2.innerHTML = responsePayload[i].price;
+            td3.innerHTML = '<input type="number" value="' + responsePayload[i].quantity + '" data-details=\'' + JSON.stringify(responsePayload[i]) + '\'>';
+            td4.innerHTML = '<a onclick="UpdateCart();"> Update</a> | <a onclick="DeleteCart(\'tr_' + i + '\');"> Delete </a>';
           }
+
+          // Show the createCheck CTA
+          document.getElementById("createCheckCTA").style.display = 'block';
+          document.getElementById("createCheckCTA").innerHTML += '<a class="cta red" onclick="ClearCart();">Clear Cart</a>&nbsp;&nbsp;&nbsp;&nbsp;';
+          document.getElementById("createCheckCTA").innerHTML += '<a class="cta blue" onclick="CheckOut();">Check Out</a>';
+
         }
-      } else {
-        // If the request comes back as something other than 200, redirect back to dashboard
-        window.location = '/menu/all';
       }
     });
   } else {
-    window.location = '/menu/all';
+    app.logUserOut();
   }
 };
 
