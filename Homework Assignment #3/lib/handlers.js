@@ -1117,20 +1117,18 @@ handlers._cart.delete = function (data, callback) {
 // Checkout - Only accepts a POST
 // Required data: email, orderid, card number, expiry Year, Expiry Month and CVV
 handlers.checkout = function (data, callback) {
-  var orderId = helpers.createRandomString(10);
 
   if (data.method === 'post') {
     var total = 0;
+    var orderId = helpers.createRandomString(10);
     var cvv = typeof data.payload.cvv === 'string' && data.payload.cvv.trim().length === 3 ? data.payload.cvv.trim() : false;
     var phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
-    var orderId = typeof data.payload.orderId === 'string' && data.payload.orderId.trim().length === 10 ? data.payload.orderId.trim() : false;
     var expiryYear = typeof data.payload.expiryYear === 'string' && data.payload.expiryYear.trim().length === 4 ? data.payload.expiryYear.trim() : false;
     var expiryMonth = typeof data.payload.expiryMonth === 'string' && data.payload.expiryMonth.trim().length === 2 ? data.payload.expiryMonth.trim() : false;
     var cardNumber = typeof data.payload.cardNumber === 'string' && data.payload.cardNumber.trim().length > 10 && data.payload.cardNumber.trim().length < 17 ? data.payload.cardNumber.trim() : false;
     var email = typeof data.payload.email === 'string' && data.payload.email.trim().length > 0 && data.payload.email.includes('@') && data.payload.email.includes('.') ? data.payload.email.trim() : false;
 
-    if (email && orderId && cardNumber && expiryYear && expiryMonth && cvv && phone) {
-
+    if (email && cardNumber && expiryYear && expiryMonth && cvv && phone) {
       // Check to ensure card is still valid.
       var month = new Date().getMonth();
       var year = new Date().getFullYear();
@@ -1145,7 +1143,7 @@ handlers.checkout = function (data, callback) {
           if (tokenIsValid) {
 
             // check the shopping cart to ensure amount entered by customer matches amount on cart
-            _data.read('cart', orderId, function (err, data) {
+            _data.read('cart', phone, function (err, data) {
 
               if (!err && data) {
                 // Loop through to calculate the total due for Payment.

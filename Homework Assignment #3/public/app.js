@@ -604,7 +604,8 @@ function ClearCart() {
 }
 
 function CheckOut() {
-
+  document.getElementById('checkout').style.display = "block";
+  document.getElementById('cartDetails').style.display = "none";
 }
 
 // Load the checks edit page specifically
@@ -646,7 +647,12 @@ app.loadCartEditPage = function () {
           document.getElementById("createCheckCTA").innerHTML += '<a class="cta red" onclick="ClearCart();">Clear Cart</a>&nbsp;&nbsp;&nbsp;&nbsp;';
           document.getElementById("createCheckCTA").innerHTML += '<a class="cta blue" onclick="CheckOut();">Check Out</a>';
 
+        } else {
+          alert(12);
+          document.getElementById("noChecksMessage").style.display = 'table-row';
         }
+      } else {
+        document.getElementById("noChecksMessage").style.display = 'table-row';
       }
     });
   } else {

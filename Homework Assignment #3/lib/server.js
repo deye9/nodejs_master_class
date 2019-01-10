@@ -155,10 +155,9 @@ server.router = {
   'api/users': handlers.users,
   'api/tokens': handlers.tokens,
   'api/cart': handlers.cart,
+  'api/checkout': handlers.checkout,
   'favicon.ico': handlers.favicon,
   'public': handlers.public,
-  // 'cart': handlers.cart,
-  // 'checkout': handlers.checkout
 };
 
 // Init script
