@@ -1,0 +1,31 @@
+<h1>Register a Menu</h1>
+<a class="backButton" href="/menu/all">Back</a>
+<hr />
+
+<div class="formWrapper">
+  <form id="menuCreate" action="/api/menu" method="POST">
+    <div class="formError"></div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Category</div>
+      <select name="category">
+        <option value="breakfast" selected>Breakfast</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+      </select>
+    </div>
+
+    <div class="inputWrapper">
+      <div class="inputLabel">Menu Name</div>
+      <input type="text" name="name" placeholder="menu name" />
+    </div>
+
+    <div class="inputWrapper">
+      <div class="inputLabel">Menu Price</div>
+      <input type="text" name="price" placeholder="menu Price" value="₦1.00"/>
+    </div>
+
+    <div class="inputWrapper ctaWrapper">
+      <button type="submit" class="cta green">Create Menu</button>
+    </div>
+  </form>
+</div>
