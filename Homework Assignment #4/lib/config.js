@@ -8,29 +8,29 @@ const environments = {};
 
 // Staging (default) environment
 environments.staging = {
-  'httpPort': 3000,
-  'httpsPort': 3001,
+  'httpPort': 300,
+  'httpsPort': 301,
   'envName': 'staging',
   'hashingSecret': 'thisIsASecret',
   'templateGlobals': {
     'appName': 'Delightful Pizza',
     'companyName': 'Delightful Pizza, Inc.',
     'yearCreated': '2018',
-    'baseUrl': 'http://localhost:3000/'
+    'baseUrl': 'http://localhost:300/'
   }
 };
 
 // Production environment
 environments.production = {
-  'httpPort': 5000,
-  'httpsPort': 5001,
+  'httpPort': 500,
+  'httpsPort': 501,
   'envName': 'production',
   'hashingSecret': 'thisIsAlsoASecret',
   'templateGlobals': {
     'appName': 'Delightful Pizza',
     'companyName': 'Delightful Pizza, Inc.',
     'yearCreated': '2018',
-    'baseUrl': 'http://localhost:5000/'
+    'baseUrl': 'http://localhost:500/'
   }
 };
 
