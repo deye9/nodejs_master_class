@@ -3,26 +3,61 @@
  *
  */
 
-// Override the NODE_ENV variable
-process.env.NODE_ENV = 'testing';
+// Dependencies
+const assert = require('assert');
+const helpers = require('../app/lib');
 
 // Application logic for the test runner
-_app = {};
+_tests = {};
 
 // Holder of all tests
-_app.tests = {};
+tests = {
+  'unit': {}
+};
 
-// Dependencies
-_app.tests.unit = require('./unit');
-_app.tests.api = require('./api');
+tests.unit['helpers.getANumber should return a number'] = (done) => {
+  const val = helpers.getANumber();
+  assert.equal(typeof (val), 'number');
+  done();
+};
+
+tests.unit['helpers.getANumber should return 1'] = (done) => {
+  const val = helpers.getANumber();
+  assert.equal(val, 1);
+  done();
+};
+
+tests.unit['helpers.getNumberOne should return 2'] = (done) => {
+  const val = helpers.getANumber();
+  assert.equal(val, 2);
+  done();
+};
+
+tests.unit['helpers.generateNumbers should return a number'] = (done) => {
+    const val = helpers.generateNumbers();
+    assert.equal(typeof (val), 'number');
+    done();
+};
+
+tests.unit['helpers.generateNumbers should return a number between 0 and 100'] = (done) => {
+    const val = helpers.generateNumbers();
+    assert.ok(val <= 100);
+    done();
+};
+
+tests.unit['helpers.emptyObject should return an empty object'] = (done) => {
+    const val = helpers.emptyObject();
+    assert.equal(typeof(val), 'object');
+    done();
+};
 
 // Count all the tests
-_app.countTests = function () {
-  var counter = 0;
-  for (var key in _app.tests) {
-    if (_app.tests.hasOwnProperty(key)) {
-      var subTests = _app.tests[key];
-      for (var testName in subTests) {
+countTests = () => {
+  let counter = 0;
+  for (const key in tests) {
+    if (tests.hasOwnProperty(key)) {
+      const subTests = tests[key];
+      for (const testName in subTests) {
         if (subTests.hasOwnProperty(testName)) {
           counter++;
         }
@@ -33,29 +68,28 @@ _app.countTests = function () {
 };
 
 // Run all the tests, collecting the errors and successes
-_app.runTests = function () {
-  var errors = [];
-  var successes = 0;
-  var limit = _app.countTests();
-  var counter = 0;
-  for (var key in _app.tests) {
-    if (_app.tests.hasOwnProperty(key)) {
-      var subTests = _app.tests[key];
-      for (var testName in subTests) {
+runTests = () => {
+  const errors = [];
+  let successes = 0;
+  const limit = countTests();
+  let counter = 0;
+  for (const key in tests) {
+    if (tests.hasOwnProperty(key)) {
+      const subTests = tests[key];
+      for (const testName in subTests) {
         if (subTests.hasOwnProperty(testName)) {
           (function () {
-            var tmpTestName = testName;
-            var testValue = subTests[testName];
+            const tmpTestName = testName;
+            const testValue = subTests[testName];
             // Call the test
             try {
               testValue(function () {
-
                 // If it calls back without throwing, then it succeeded, so log it in green
                 console.log('\x1b[32m%s\x1b[0m', tmpTestName);
                 counter++;
                 successes++;
                 if (counter == limit) {
-                  _app.produceTestReport(limit, successes, errors);
+                  produceTestReport(limit, successes, errors);
                 }
               });
             } catch (e) {
@@ -67,7 +101,7 @@ _app.runTests = function () {
               console.log('\x1b[31m%s\x1b[0m', tmpTestName);
               counter++;
               if (counter == limit) {
-                _app.produceTestReport(limit, successes, errors);
+                produceTestReport(limit, successes, errors);
               }
             }
           })();
@@ -77,9 +111,8 @@ _app.runTests = function () {
   }
 };
 
-
 // Product a test outcome report
-_app.produceTestReport = function (limit, successes, errors) {
+produceTestReport = (limit, successes, errors) => {
   console.log("");
   console.log("--------BEGIN TEST REPORT--------");
   console.log("");
@@ -100,11 +133,12 @@ _app.produceTestReport = function (limit, successes, errors) {
     console.log("");
     console.log("--------END ERROR DETAILS--------");
   }
+
+
   console.log("");
   console.log("--------END TEST REPORT--------");
   process.exit(0);
-
 };
 
 // Run the tests
-_app.runTests();
+runTests();
