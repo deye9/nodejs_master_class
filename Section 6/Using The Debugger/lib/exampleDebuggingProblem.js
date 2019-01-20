@@ -7,7 +7,7 @@
 var example = {};
 
 // Init function
-example.init = function(){
+example.init = function () {
   // This is an error created intentionally (bar is not defined)
   var foo = bar;
 };

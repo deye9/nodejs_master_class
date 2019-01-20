@@ -15,7 +15,7 @@ var app = {};
 foo = 'bar';
 
 // Init function
-app.init = function(){
+app.init = function () {
 
   // Start the server
   server.init();
@@ -24,9 +24,9 @@ app.init = function(){
   workers.init();
 
   // Start the CLI, but make sure it starts last
-  setTimeout(function(){
+  setTimeout(function () {
     cli.init();
-  },50);
+  }, 50);
 
 };
 

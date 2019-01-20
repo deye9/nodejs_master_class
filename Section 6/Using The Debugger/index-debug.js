@@ -13,7 +13,7 @@ var cli = require('./lib/cli');
 var app = {};
 
 // Init function
-app.init = function(){
+app.init = function () {
 
   // Start the server
   debugger;
@@ -27,10 +27,10 @@ app.init = function(){
 
   // Start the CLI, but make sure it starts last
   debugger;
-  setTimeout(function(){
+  setTimeout(function () {
     cli.init();
     debugger;
-  },50);
+  }, 50);
   debugger;
 
   // Start an example script that has issues (throws an error)
