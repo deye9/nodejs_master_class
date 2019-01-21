@@ -17,12 +17,12 @@ var req = client.request({
 
 // When message is received, add the pieces of it together until you reach the end
 var str = '';
-req.on('data',function(chunk){
+req.on('data', function (chunk) {
   str += chunk;
 });
 
 // When a message ends, log it out
-req.on('end', function(){
+req.on('end', function () {
   console.log(str);
 });
 

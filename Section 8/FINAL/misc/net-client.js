@@ -11,14 +11,16 @@ var net = require('net');
 var outboundMessage = 'ping';
 
 // Create the client
-var client = net.createConnection({ port: 6000 }, function(){
+var client = net.createConnection({
+  port: 6000
+}, function () {
   // Send the message
   client.write(outboundMessage);
 });
 
 // When the server writes back, log what it says then kill the client
-client.on('data',function(inboundMessage){
+client.on('data', function (inboundMessage) {
   var messageString = inboundMessage.toString();
-  console.log("I wrote "+outboundMessage+" and they said "+messageString);
+  console.log("I wrote " + outboundMessage + " and they said " + messageString);
   client.end();
 });

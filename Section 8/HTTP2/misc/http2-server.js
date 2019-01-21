@@ -11,7 +11,7 @@ var http2 = require('http2');
 var server = http2.createServer();
 
 // On a stream, send back hello world html
-server.on('stream', function(stream,headers){
+server.on('stream', function (stream, headers) {
   stream.respond({
     ':status': 200,
     'content-type': 'text/html'

@@ -12,21 +12,21 @@ var path = require('path');
 // Define the message to send
 var outboundMessage = 'ping';
 
-
 // Client options
 var options = {
-  'ca': [fs.readFileSync(path.join(__dirname,'/../https/cert.pem'))] // Only required because we're using a self-signed cert)
+  // Only required because we're using a self-signed cert)
+  'ca': [fs.readFileSync(path.join(__dirname, '/../https/cert.pem'))]
 };
 
 // Create the client
-var client = tls.connect(6000, options, function(){
+var client = tls.connect(6000, options, function () {
   // Send the message
   client.write(outboundMessage);
 });
 
 // When the server writes back, log what it says then kill the client
-client.on('data',function(inboundMessage){
+client.on('data', function (inboundMessage) {
   var messageString = inboundMessage.toString();
-  console.log("I wrote "+outboundMessage+" and they said "+messageString);
+  console.log("I wrote " + outboundMessage + " and they said " + messageString);
   client.end();
 });

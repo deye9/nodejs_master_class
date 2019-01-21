@@ -9,7 +9,7 @@ var vm = require('vm');
 
 // Define a context for the script to run in
 var context = {
-  'foo' : 25
+  'foo': 25
 };
 
 // Define the script
